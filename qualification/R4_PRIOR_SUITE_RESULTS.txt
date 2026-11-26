@@ -1,0 +1,170 @@
+
+=== reference_checks.py ===
+NUMERICAL REFERENCE ONLY — not Rust execution
+PASS short-term analytic K response: -9.02419547383 (expected -9.02419547384, tolerance 0.015)
+PASS LRA two-level tone: 20 (expected 20, tolerance 0.15)
+PASS rational short-term clock
+PASS Parseval stereo-independent PCM power: 0.01 (expected 0.01, tolerance 1e-12)
+PASS above 20 kHz ratio: -3.01032187681 (expected -3.01029995664, tolerance 0.002)
+PASS bandwidth of bin-aligned high tone: 30.0234375 (expected 30, tolerance 0.04)
+PASS partial multichannel block power: 0.000101396743588 (expected 0.000101396743588, tolerance 1e-15)
+PASS five-tone quiet full-band power: 2.5e-10 (expected 2.5e-10, tolerance 1e-19)
+PASS five-tone audible quiet power: -96.9899914156 (expected -96.9897000434, tolerance 0.002)
+PASS noise band 20-200 Hz: -103.010972804 (expected -103.010299957, tolerance 0.005)
+PASS noise band 200-2000 Hz: -103.010609743 (expected -103.010299957, tolerance 0.005)
+PASS noise band 2000-10000 Hz: -103.010414892 (expected -103.010299957, tolerance 0.005)
+PASS noise band 10000-20000 Hz: -103.010367904 (expected -103.010299957, tolerance 0.005)
+PASS noise band 20000-48001 Hz: -103.010293163 (expected -103.010299957, tolerance 0.005)
+PASS A weighted noise differs: -99.150933 dBFS vs -96.020600
+PASS 468 weighted noise differs: -90.998515 dBFS vs -96.020600
+PASS A weighting 100 Hz: -19.1449542913 (expected -19.1, tolerance 0.11)
+PASS 468 weighting 100 Hz: -19.8688964741 (expected -19.9, tolerance 0.11)
+PASS A weighting 1000 Hz: 0.000141527694879 (expected 0, tolerance 0.11)
+PASS 468 weighting 1000 Hz: -0.018675179221 (expected 0, tolerance 0.11)
+PASS A weighting 4000 Hz: 0.963597905245 (expected 1, tolerance 0.11)
+PASS 468 weighting 4000 Hz: 10.5178653142 (expected 10.5, tolerance 0.11)
+PASS A weighting 6300 Hz: -0.11555247781 (expected -0.1, tolerance 0.11)
+PASS 468 weighting 6300 Hz: 12.1980586683 (expected 12.2, tolerance 0.11)
+PASS A weighting 10000 Hz: -2.49156942461 (expected -2.5, tolerance 0.11)
+PASS 468 weighting 10000 Hz: 8.11640397353 (expected 8.1, tolerance 0.11)
+PASS duration-pooled quiet power: 1.5e-10 (expected 1.5e-10, tolerance 1e-24)
+PASS steep cutoff fixture meets occupied-band and drop criteria
+PASS upper-band delay sign and fractional interpolation: 62.4999918097 (expected 62.5, tolerance 2)
+PASS flat dither fixture band ratio 0.998563
+PASS shaped dither fixture band ratio 4.499916
+PASS hum line frequency: 49.9477945703 (expected 50, tolerance 2)
+PASS hum line power: -103.085743071 (expected -103.010299957, tolerance 0.4)
+PASS hum line frequency: 100.047113216 (expected 100, tolerance 2)
+PASS hum line power: -97.0613317827 (expected -96.9897000434, tolerance 0.4)
+All independent numerical reference checks passed.
+exit status: 0
+
+=== audit_reference.py ===
+INDEPENDENT NUMERICAL / FIXTURE MODEL ONLY. NOT NATIVE RUST QUALIFICATION.
+PASS squared overlap partition: 6.66133814775e-16 (expected 0, tolerance 1e-14)
+PASS burst start 0 full-record DFT oracle: -24.3847850228 (expected -24.3847977062, tolerance 0.5)
+PASS burst start 0 Parseval: 0.00501828417971 (expected 0.00501828417971, tolerance 1e-12)
+PASS quiet burst 0 none 0-48000.0 Hz: -102.994447487 (expected -102.994447487, tolerance 0.5)
+PASS quiet burst 0 none 20-20000 Hz: -103.010313165 (expected -103.010299957, tolerance 0.5)
+PASS quiet burst 0 none 20000-48000.0 Hz: -127.37923251 (expected -127.379245193, tolerance 0.5)
+PASS quiet burst 0 A 0-48000.0 Hz: -103.004236546 (expected -103.003704687, tolerance 0.5)
+PASS quiet burst 0 A 20-20000 Hz: -103.004741593 (expected -103.00420967, tolerance 0.5)
+PASS quiet burst 0 A 20000-48000.0 Hz: -142.349011286 (expected -142.349031804, tolerance 0.5)
+PASS quiet burst 0 468 0-48000.0 Hz: -103.012736821 (expected -103.012593926, tolerance 0.5)
+PASS quiet burst 0 468 20-20000 Hz: -103.012738221 (expected -103.012595324, tolerance 0.5)
+PASS quiet burst 0 468 20000-48000.0 Hz: -167.935932928 (expected -167.936092105, tolerance 0.5)
+PASS burst start 1 full-record DFT oracle: -24.3847850218 (expected -24.3847977062, tolerance 0.5)
+PASS burst start 1 Parseval: 0.00501828417971 (expected 0.00501828417971, tolerance 1e-12)
+PASS quiet burst 1 none 0-48000.0 Hz: -102.994447487 (expected -102.994447487, tolerance 0.5)
+PASS quiet burst 1 none 20-20000 Hz: -103.010313165 (expected -103.010299957, tolerance 0.5)
+PASS quiet burst 1 none 20000-48000.0 Hz: -127.379232509 (expected -127.379245193, tolerance 0.5)
+PASS quiet burst 1 A 0-48000.0 Hz: -103.004236546 (expected -103.003704687, tolerance 0.5)
+PASS quiet burst 1 A 20-20000 Hz: -103.004741593 (expected -103.00420967, tolerance 0.5)
+PASS quiet burst 1 A 20000-48000.0 Hz: -142.349011288 (expected -142.349031804, tolerance 0.5)
+PASS quiet burst 1 468 0-48000.0 Hz: -103.012736821 (expected -103.012593926, tolerance 0.5)
+PASS quiet burst 1 468 20-20000 Hz: -103.012738221 (expected -103.012595324, tolerance 0.5)
+PASS quiet burst 1 468 20000-48000.0 Hz: -167.935932999 (expected -167.936092105, tolerance 0.5)
+PASS burst start 7168 full-record DFT oracle: -24.3847850211 (expected -24.3847977062, tolerance 0.5)
+PASS burst start 7168 Parseval: 0.00501828417977 (expected 0.00501828417977, tolerance 1e-12)
+PASS quiet burst 7168 none 0-48000.0 Hz: -102.994447487 (expected -102.994447487, tolerance 0.5)
+PASS quiet burst 7168 none 20-20000 Hz: -103.010313165 (expected -103.010299957, tolerance 0.5)
+PASS quiet burst 7168 none 20000-48000.0 Hz: -127.379232508 (expected -127.379245193, tolerance 0.5)
+PASS quiet burst 7168 A 0-48000.0 Hz: -103.004236546 (expected -103.003704687, tolerance 0.5)
+PASS quiet burst 7168 A 20-20000 Hz: -103.004741593 (expected -103.00420967, tolerance 0.5)
+PASS quiet burst 7168 A 20000-48000.0 Hz: -142.349011387 (expected -142.349031804, tolerance 0.5)
+PASS quiet burst 7168 468 0-48000.0 Hz: -103.012736821 (expected -103.012593926, tolerance 0.5)
+PASS quiet burst 7168 468 20-20000 Hz: -103.012738221 (expected -103.012595324, tolerance 0.5)
+PASS quiet burst 7168 468 20000-48000.0 Hz: -167.935933815 (expected -167.936092105, tolerance 0.5)
+PASS burst start 15360 full-record DFT oracle: -24.384785021 (expected -24.3847977061, tolerance 0.5)
+PASS burst start 15360 Parseval: 0.0050182841796 (expected 0.0050182841796, tolerance 1e-12)
+PASS quiet burst 15360 none 0-48000.0 Hz: -102.994447487 (expected -102.994447487, tolerance 0.5)
+PASS quiet burst 15360 none 20-20000 Hz: -103.010313165 (expected -103.010299957, tolerance 0.5)
+PASS quiet burst 15360 none 20000-48000.0 Hz: -127.379232508 (expected -127.379245193, tolerance 0.5)
+PASS quiet burst 15360 A 0-48000.0 Hz: -103.004236546 (expected -103.003704687, tolerance 0.5)
+PASS quiet burst 15360 A 20-20000 Hz: -103.004741593 (expected -103.00420967, tolerance 0.5)
+PASS quiet burst 15360 A 20000-48000.0 Hz: -142.349011387 (expected -142.349031804, tolerance 0.5)
+PASS quiet burst 15360 468 0-48000.0 Hz: -103.012736821 (expected -103.012593926, tolerance 0.5)
+PASS quiet burst 15360 468 20-20000 Hz: -103.012738221 (expected -103.012595324, tolerance 0.5)
+PASS quiet burst 15360 468 20000-48000.0 Hz: -167.935933815 (expected -167.936092105, tolerance 0.5)
+PASS burst start 129024 full-record DFT oracle: -24.3847850218 (expected -24.3847977062, tolerance 0.5)
+PASS burst start 129024 Parseval: 0.00501828417973 (expected 0.00501828417973, tolerance 1e-12)
+PASS quiet burst 129024 none 0-48000.0 Hz: -102.994447487 (expected -102.994447487, tolerance 0.5)
+PASS quiet burst 129024 none 20-20000 Hz: -103.010313165 (expected -103.010299957, tolerance 0.5)
+PASS quiet burst 129024 none 20000-48000.0 Hz: -127.379232509 (expected -127.379245193, tolerance 0.5)
+PASS quiet burst 129024 A 0-48000.0 Hz: -103.004236546 (expected -103.003704687, tolerance 0.5)
+PASS quiet burst 129024 A 20-20000 Hz: -103.004741593 (expected -103.00420967, tolerance 0.5)
+PASS quiet burst 129024 A 20000-48000.0 Hz: -142.349011282 (expected -142.349031804, tolerance 0.5)
+PASS quiet burst 129024 468 0-48000.0 Hz: -103.012736821 (expected -103.012593926, tolerance 0.5)
+PASS quiet burst 129024 468 20-20000 Hz: -103.012738221 (expected -103.012595324, tolerance 0.5)
+PASS quiet burst 129024 468 20000-48000.0 Hz: -167.935932919 (expected -167.936092105, tolerance 0.5)
+LEGACY position spread 45.778470 dB; corrected reference spread 0.000000002 dB
+PASS multichannel partial 1 frames: 3.61973900367e-05 (expected 3.61973900367e-05, tolerance 1e-15)
+PASS multichannel partial 2 frames: 0.000186370041505 (expected 0.000186370041505, tolerance 1e-15)
+PASS multichannel partial 8191 frames: 0.000100059908119 (expected 0.000100059908119, tolerance 1e-15)
+PASS multichannel partial 8192 frames: 9.96269544686e-05 (expected 9.96269544686e-05, tolerance 1e-15)
+PASS multichannel partial 8193 frames: 0.000101204948183 (expected 0.000101204948183, tolerance 1e-15)
+PASS multichannel partial 16383 frames: 9.98812167571e-05 (expected 9.98812167571e-05, tolerance 1e-15)
+PASS multichannel partial 16384 frames: 0.000100015610773 (expected 0.000100015610773, tolerance 1e-15)
+PASS multichannel partial 16385 frames: 9.98411391987e-05 (expected 9.98411391987e-05, tolerance 1e-15)
+PASS multichannel partial 49329 frames: 0.00010085261951 (expected 0.00010085261951, tolerance 1e-15)
+PASS streaming-schedule mathematical coverage, 32 length/chunk combinations
+PASS quiet boundary loud 0.1 offset 0 length 48000: -103.010299957 (expected -103.010299957, tolerance 1e-09)
+PASS quiet boundary loud 0.1 offset 0 length 48960: -103.010299957 (expected -103.010299957, tolerance 1e-09)
+PASS quiet boundary loud 0.1 offset 1 length 48000: -103.010299957 (expected -103.010299957, tolerance 1e-09)
+PASS quiet boundary loud 0.1 offset 1 length 48960: -103.010299957 (expected -103.010299957, tolerance 1e-09)
+PASS quiet boundary loud 0.1 offset 97 length 48000: -103.010299957 (expected -103.010299957, tolerance 1e-09)
+PASS quiet boundary loud 0.1 offset 97 length 48960: -103.010299957 (expected -103.010299957, tolerance 1e-09)
+PASS quiet boundary loud 0.1 offset 1200 length 48000: -103.010299957 (expected -103.010299957, tolerance 1e-09)
+PASS quiet boundary loud 0.1 offset 1200 length 48960: -103.010299957 (expected -103.010299957, tolerance 1e-09)
+PASS quiet boundary loud 0.1 offset 2399 length 48000: -103.010299957 (expected -103.010299957, tolerance 1e-09)
+PASS quiet boundary loud 0.1 offset 2399 length 48960: -103.010299957 (expected -103.010299957, tolerance 1e-09)
+PASS quiet boundary loud 0.02 offset 0 length 48000: -103.010299957 (expected -103.010299957, tolerance 1e-09)
+PASS quiet boundary loud 0.02 offset 0 length 48960: -103.010299957 (expected -103.010299957, tolerance 1e-09)
+PASS quiet boundary loud 0.02 offset 1 length 48000: -103.010299957 (expected -103.010299957, tolerance 1e-09)
+PASS quiet boundary loud 0.02 offset 1 length 48960: -103.010299957 (expected -103.010299957, tolerance 1e-09)
+PASS quiet boundary loud 0.02 offset 97 length 48000: -103.010299957 (expected -103.010299957, tolerance 1e-09)
+PASS quiet boundary loud 0.02 offset 97 length 48960: -103.010299957 (expected -103.010299957, tolerance 1e-09)
+PASS quiet boundary loud 0.02 offset 1200 length 48000: -103.010299957 (expected -103.010299957, tolerance 1e-09)
+PASS quiet boundary loud 0.02 offset 1200 length 48960: -103.010299957 (expected -103.010299957, tolerance 1e-09)
+PASS quiet boundary loud 0.02 offset 2399 length 48000: -103.010299957 (expected -103.010299957, tolerance 1e-09)
+PASS quiet boundary loud 0.02 offset 2399 length 48960: -103.010299957 (expected -103.010299957, tolerance 1e-09)
+PASS transition fixture model, subminimum gaps and separated/boundary runs
+PASS lattice step 256 offset 0: normalized 16, observed 16
+PASS lattice step 192 offset 0: normalized 18, observed 16
+PASS lattice step 128 offset 0: normalized 17, observed 16
+PASS lattice step 192 offset 7: normalized 24, observed 16
+PASS binary-aligned dither eligibility and multiples-of-100 negative control
+NUMPY reference only legacy-nonoverlap: median 0.010592 s for 6 s PCM
+NUMPY reference only complementary-half-hop: median 0.009108 s for 6 s PCM
+All corrective numerical and fixture-model checks passed.
+exit status: 0
+
+=== r2_reference.py ===
+R2 NUMERICAL/FIXTURE MODELS ONLY; NATIVE RUST TESTS NOT EXECUTED
+PASS R2 supplied quiet-floor oracle: -61.4266750357 (expected -61.4266750357, tolerance 1e-08)
+REPRODUCED previous candidate: quiet passage discarded; R2 model recovers 48,960 frames
+PASS exact known quiet intervals: 2547 cases (rates, phases, channels, high crests, boundaries, subminimum and separated runs)
+PASS R2 burst placement 0 bandwidth kHz: 30 (expected 30, tolerance 0.4)
+PASS R2 burst placement 65056 bandwidth kHz: 30.169921875 (expected 30, tolerance 0.4)
+PASS R2 burst placement 130112 bandwidth kHz: 30 (expected 30, tolerance 0.4)
+REPRODUCED previous candidate: bandwidth Hz [np.float64(1025.390625), np.float64(30169.921875), np.float64(1025.390625)] ; R2 model [np.float64(30000.0), np.float64(30169.921875), np.float64(30000.0)]
+PASS unchanged complementary power ratio dB: -45.6105050866 (expected -45.6105, tolerance 0.001)
+PASS 125 boundary/short/cutoff/stereo bandwidth fixture models
+REPRODUCED previous candidate: used 18; R2 observed width 16, normalized 18, spacing 192
+PASS 18 exact lattice models (complete, headroom, offset, aligned, full grid)
+R2 reference models completed in 6.288 s (not native throughput)
+exit status: 0
+
+=== r3_reference.py ===
+R3 NUMERICAL FIXTURE MODELS ONLY; NATIVE RUST NOT EXECUTED
+PASS R3 full-band raw PCM floor: -61.4266750357 (expected -61.4266750357, tolerance 1e-08)
+REPRODUCED R2: 47777 frames (0.995354167 s), no qualifying run
+PASS R3: 48960 frames (1.02 s), floor -61.426675036 dBFS
+PASS 960 tonal cases (rates, phases, channels, offsets, reverse); 3 R2 unavailable outcomes; worst floor error 0.034987813 dB; worst duration error 0.291667 ms
+PASS 720 additional loud-frequency/phase/mirror cases; worst floor error 0.076954799 dB
+PASS 32 nonqualifying tonal controls (short and separated runs)
+PASS R2 supplied quiet-floor oracle: -61.4266750357 (expected -61.4266750357, tolerance 1e-08)
+REPRODUCED previous candidate: quiet passage discarded; R2 model recovers 48,960 frames
+PASS exact known quiet intervals: 2547 cases (rates, phases, channels, high crests, boundaries, subminimum and separated runs)
+PASS all 2547 exact R2 quiet-interval cases with R3 refinement
+exit status: 0

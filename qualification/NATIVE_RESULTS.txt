@@ -1,0 +1,2 @@
+BLOCKED: Rust >=1.95 and Cargo are required. Use the supplied Nix development shell.
+exit status: 77

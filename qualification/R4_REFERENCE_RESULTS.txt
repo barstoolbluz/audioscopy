@@ -1,0 +1,27 @@
+R4 NUMERICAL MODEL ONLY; NATIVE RUST NOT EXECUTED
+Base R3 bandwidth: 1054.687500000 Hz; noise RMS -141.481978 dBFS
+REPRODUCED 24-bit noise at 81920: R3 1054.687500000 Hz, R4 1054.687500000 Hz
+REPRODUCED 24-bit noise at 81920: R3 1054.687500000 Hz, R4 1054.687500000 Hz
+REPRODUCED 24-bit noise at 122880: R3 47970.703125000 Hz, R4 1054.687500000 Hz
+REPRODUCED 24-bit noise at 122880: R3 47970.703125000 Hz, R4 1054.687500000 Hz
+Endpoint peak 0.001: R3 30023.437500000 Hz, R4 30023.437500000 Hz
+Endpoint peak 0.001: R3 30023.437500000 Hz, R4 30023.437500000 Hz
+Endpoint peak 1e-06: R3 30000.000000000 Hz, R4 1054.687500000 Hz
+Endpoint peak 1e-06: R3 30000.000000000 Hz, R4 1054.687500000 Hz
+Endpoint peak 1e-07: R3 30000.000000000 Hz, R4 1054.687500000 Hz
+Endpoint peak 1e-07: R3 30000.000000000 Hz, R4 1054.687500000 Hz
+Endpoint peak 1e-08: R3 30000.000000000 Hz, R4 1054.687500000 Hz
+Endpoint peak 1e-08: R3 30000.000000000 Hz, R4 1054.687500000 Hz
+Endpoint peak 1e-12: R3 30000.000000000 Hz, R4 1054.687500000 Hz
+Endpoint peak 1e-12: R3 30000.000000000 Hz, R4 1054.687500000 Hz
+Material lower peak with negligible higher peak: R3 30000.000000000 Hz, R4 6000.000000000 Hz
+Material lower peak with negligible higher peak: R3 30000.000000000 Hz, R4 6000.000000000 Hz
+PASS 95 R4 materiality, mirrored, gain, multichannel, short/endpoint-only and silence cases
+PASS R2 burst placement 0 bandwidth kHz: 30 (expected 30, tolerance 0.4)
+PASS R2 burst placement 65056 bandwidth kHz: 30.169921875 (expected 30, tolerance 0.4)
+PASS R2 burst placement 130112 bandwidth kHz: 30 (expected 30, tolerance 0.4)
+REPRODUCED previous candidate: bandwidth Hz [np.float64(1025.390625), np.float64(30169.921875), np.float64(1025.390625)] ; R2 model [np.float64(30000.0), np.float64(30169.921875), np.float64(30000.0)]
+PASS unchanged complementary power ratio dB: -45.6105050866 (expected -45.6105, tolerance 0.001)
+PASS 125 boundary/short/cutoff/stereo bandwidth fixture models
+PASS all 125 existing bandwidth fixture models using R4 criterion
+Model elapsed 1.149 s (not a native benchmark)

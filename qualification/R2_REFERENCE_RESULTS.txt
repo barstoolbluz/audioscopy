@@ -1,0 +1,13 @@
+R2 NUMERICAL/FIXTURE MODELS ONLY; NATIVE RUST TESTS NOT EXECUTED
+PASS R2 supplied quiet-floor oracle: -61.4266750357 (expected -61.4266750357, tolerance 1e-08)
+REPRODUCED previous candidate: quiet passage discarded; R2 model recovers 48,960 frames
+PASS exact known quiet intervals: 2547 cases (rates, phases, channels, high crests, boundaries, subminimum and separated runs)
+PASS R2 burst placement 0 bandwidth kHz: 30 (expected 30, tolerance 0.4)
+PASS R2 burst placement 65056 bandwidth kHz: 30.169921875 (expected 30, tolerance 0.4)
+PASS R2 burst placement 130112 bandwidth kHz: 30 (expected 30, tolerance 0.4)
+REPRODUCED previous candidate: bandwidth Hz [np.float64(1025.390625), np.float64(30169.921875), np.float64(1025.390625)] ; R2 model [np.float64(30000.0), np.float64(30169.921875), np.float64(30000.0)]
+PASS unchanged complementary power ratio dB: -45.6105050866 (expected -45.6105, tolerance 0.001)
+PASS 125 boundary/short/cutoff/stereo bandwidth fixture models
+REPRODUCED previous candidate: used 18; R2 observed width 16, normalized 18, spacing 192
+PASS 18 exact lattice models (complete, headroom, offset, aligned, full grid)
+R2 reference models completed in 6.620 s (not native throughput)

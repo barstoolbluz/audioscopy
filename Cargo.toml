@@ -11,3 +11,7 @@ keywords = ["audio", "analysis", "measurement", "dsp"]
 categories = ["multimedia::audio"]
 
 [dependencies]
+# Cargo uses the sibling during local development and the registry version
+# after publication. Publish true-peak 0.1.0 first.
+true-peak = { version = "=0.1.0", path = "../true-peak" }
+rustfft = "=6.4.1"

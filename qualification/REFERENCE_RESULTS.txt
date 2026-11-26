@@ -1,0 +1,37 @@
+NUMERICAL REFERENCE ONLY — not Rust execution
+PASS short-term analytic K response: -9.02419547383 (expected -9.02419547384, tolerance 0.015)
+PASS LRA two-level tone: 20 (expected 20, tolerance 0.15)
+PASS rational short-term clock
+PASS Parseval stereo-independent PCM power: 0.01 (expected 0.01, tolerance 1e-12)
+PASS above 20 kHz ratio: -3.01032187681 (expected -3.01029995664, tolerance 0.002)
+PASS bandwidth of bin-aligned high tone: 30.0234375 (expected 30, tolerance 0.04)
+PASS partial multichannel block power: 0.000101396743588 (expected 0.000101396743588, tolerance 1e-15)
+PASS five-tone quiet full-band power: 2.5e-10 (expected 2.5e-10, tolerance 1e-19)
+PASS five-tone audible quiet power: -96.9899914156 (expected -96.9897000434, tolerance 0.002)
+PASS noise band 20-200 Hz: -103.010972804 (expected -103.010299957, tolerance 0.005)
+PASS noise band 200-2000 Hz: -103.010609743 (expected -103.010299957, tolerance 0.005)
+PASS noise band 2000-10000 Hz: -103.010414892 (expected -103.010299957, tolerance 0.005)
+PASS noise band 10000-20000 Hz: -103.010367904 (expected -103.010299957, tolerance 0.005)
+PASS noise band 20000-48001 Hz: -103.010293163 (expected -103.010299957, tolerance 0.005)
+PASS A weighted noise differs: -99.150933 dBFS vs -96.020600
+PASS 468 weighted noise differs: -90.998515 dBFS vs -96.020600
+PASS A weighting 100 Hz: -19.1449542913 (expected -19.1, tolerance 0.11)
+PASS 468 weighting 100 Hz: -19.8688964741 (expected -19.9, tolerance 0.11)
+PASS A weighting 1000 Hz: 0.000141527694879 (expected 0, tolerance 0.11)
+PASS 468 weighting 1000 Hz: -0.018675179221 (expected 0, tolerance 0.11)
+PASS A weighting 4000 Hz: 0.963597905245 (expected 1, tolerance 0.11)
+PASS 468 weighting 4000 Hz: 10.5178653142 (expected 10.5, tolerance 0.11)
+PASS A weighting 6300 Hz: -0.11555247781 (expected -0.1, tolerance 0.11)
+PASS 468 weighting 6300 Hz: 12.1980586683 (expected 12.2, tolerance 0.11)
+PASS A weighting 10000 Hz: -2.49156942461 (expected -2.5, tolerance 0.11)
+PASS 468 weighting 10000 Hz: 8.11640397353 (expected 8.1, tolerance 0.11)
+PASS duration-pooled quiet power: 1.5e-10 (expected 1.5e-10, tolerance 1e-24)
+PASS steep cutoff fixture meets occupied-band and drop criteria
+PASS upper-band delay sign and fractional interpolation: 62.4999918097 (expected 62.5, tolerance 2)
+PASS flat dither fixture band ratio 0.998563
+PASS shaped dither fixture band ratio 4.499916
+PASS hum line frequency: 49.9477945703 (expected 50, tolerance 2)
+PASS hum line power: -103.085743071 (expected -103.010299957, tolerance 0.4)
+PASS hum line frequency: 100.047113216 (expected 100, tolerance 2)
+PASS hum line power: -97.0613317827 (expected -96.9897000434, tolerance 0.4)
+All independent numerical reference checks passed.

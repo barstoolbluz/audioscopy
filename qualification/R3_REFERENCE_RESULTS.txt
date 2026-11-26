@@ -1,0 +1,11 @@
+R3 NUMERICAL FIXTURE MODELS ONLY; NATIVE RUST NOT EXECUTED
+PASS R3 full-band raw PCM floor: -61.4266750357 (expected -61.4266750357, tolerance 1e-08)
+REPRODUCED R2: 47777 frames (0.995354167 s), no qualifying run
+PASS R3: 48960 frames (1.02 s), floor -61.426675036 dBFS
+PASS 960 tonal cases (rates, phases, channels, offsets, reverse); 3 R2 unavailable outcomes; worst floor error 0.034987813 dB; worst duration error 0.291667 ms
+PASS 720 additional loud-frequency/phase/mirror cases; worst floor error 0.076954799 dB
+PASS 32 nonqualifying tonal controls (short and separated runs)
+PASS R2 supplied quiet-floor oracle: -61.4266750357 (expected -61.4266750357, tolerance 1e-08)
+REPRODUCED previous candidate: quiet passage discarded; R2 model recovers 48,960 frames
+PASS exact known quiet intervals: 2547 cases (rates, phases, channels, high crests, boundaries, subminimum and separated runs)
+PASS all 2547 exact R2 quiet-interval cases with R3 refinement
