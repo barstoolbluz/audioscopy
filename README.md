@@ -1,288 +1,174 @@
-# audioscopy
+# Audioscopy
 
-Streaming measurements of decoded PCM, independent of any player, editor,
-container format or decoder. Implements the 25 file/album measurements in
-TonePoet Advanced Analysis measurement inventory revision 2, sections 3.1–3.6.
-The crate does not perform file I/O, decode audio, render graphs, or compare
-versions of recordings. DSD and test-signal analysis are outside this release.
+**A streaming audio measurement library for Rust.**
 
-**Round-1 status:** implementation and qualification fixtures supplied. The
-original delivery environment had no Rust compiler or Cargo and could not
-resolve the Rust distribution host. Rust compilation, execution and performance
-qualification are outstanding; see `../QUALIFICATION.md` and
-`qualification/REFERENCE_RESULTS.txt`. Do not treat the numerical Python
-reference checks as execution of this crate.
+Audioscopy measures the properties of decoded digital audio, from loudness and dynamics to spectral content, noise, effective resolution and stereo relationships. It is designed for applications that need detailed, repeatable measurements of individual recordings or entire albums, including music library managers, mastering and restoration software, audio conversion utilities, and automated quality-control systems.
 
-## Use
+Audioscopy can help answer questions that file metadata alone cannot. Does a 24-bit recording use all 24 bits? Is there appreciable signal above 20 kHz? Does a high-resolution file contain evidence of a lower source sample rate? How much noise is present during quiet passages? How does the stereo image behave when summed to mono?
 
-The input is interleaved `f64`, normalized so signed integer full scale is
-`-1.0` through `1.0 - 2^(1-bits)`. An integer format requires exact normalized
-codes: do not scale by `i16::MAX`, round float samples, or dither in the decoder
-before measurement. Float PCM is accepted as delivered, including finite
-overs up to 16.0 in magnitude. Supported PCM rates: 8–768 kHz; channels: 1–64;
-integer depths: 1–32. The caller supplies explicit loudness roles for >2 channels
-when selecting loudness. Stereo measures apply only to exactly two channels.
+The library operates on decoded PCM. Applications supply samples and receive structured measurements, including numerical data suitable for plotting. Audioscopy is independent of audio codecs, file formats, playback engines and user interfaces. It can analyze the same PCM regardless of whether it came from a FLAC file, a WAV file, a decoder, or a generated signal.
+
+## What Audioscopy measures
+
+Audioscopy currently provides 25 selectable measurements for tracks and albums.
+
+| Category | Measurements |
+| --- | --- |
+| Loudness | Loudness range (LRA), maximum short-term loudness, loudness over time |
+| Dynamics | Limiting, flat-topped peaks |
+| Resolution | Bits in use, estimated effective bits |
+| Spectral content | Likely source sample rate, lossy coding patterns, occupied bandwidth, proportion of power above 20 kHz, average power spectrum |
+| Noise and artifacts | Noise floor, dynamic range, noise spectrum, hum and idle tones, noise by frequency band, clicks per minute, dither classification |
+| Stereo | Correlation, channel balance, stereo width, mono compatibility, inter-channel delay, bass stereo width |
+
+Loudness measurements use ITU-R BS.1770 K-weighting and EBU Tech 3342 loudness range. The short-term measurements use complete three-second windows at 100 ms intervals. The companion `true-peak` crate supplies the native loudness implementation; it also provides standalone peak and loudness measurement APIs.
+
+Several measurements deserve particular explanation:
+
+- **Bits in use** examines exact PCM sample codes and their observed integer lattice. It can identify unused low bits and other evidence of reduced resolution in a higher-bit-depth representation.
+- **Effective bits** estimates resolution from measured quiet-passage noise. This is distinct from the exact integer-grid measurement and from the nominal bit depth of the file.
+- **Noise floor and dynamic range** use qualifying quiet passages in the recording. Dynamic range is the difference between its sample peak and measured quiet-passage floor.
+- **Bandwidth and source-rate analysis** examine occupied spectral content and characteristic cutoffs. These can help identify potentially upsampled audio.
+- **Stereo analysis** measures relationships between channels, including level differences, cancellation when summed to mono, relative delay and the frequency below which the bass is effectively mono.
+
+Lossy coding, likely source rate, dither, limiting and click detection are evidence-based estimates or heuristics. They cannot establish a recording's mastering history, prove that it was losslessly encoded, or determine its subjective sound quality. Audioscopy reports insufficient evidence when a measurement cannot support a result.
+
+[docs/measurements.md](docs/measurements.md) gives the exact definitions, thresholds and limitations of each measurement.
+
+## Design and performance
+
+Audioscopy is intended for high-resolution audio and large collections. It accepts interleaved binary64 (`f64`) PCM at sample rates from 8 kHz to 768 kHz, with 1–64 channels. Integer PCM from 1–32 bits and floating-point PCM are supported.
+
+- **Streaming analysis.** Supply samples in chunks of any whole-frame length. Measurement state persists across chunk boundaries. A complete recording need never reside in memory.
+- **Selective computation.** Request only the measurements you need. Measurements share common computations where possible; unrelated FFTs, filters and observation histories are omitted.
+- **Numerical fidelity.** Conditioned K-weighting, numerically stable stereo statistics, compensated loudness energy accumulation and power-preserving spectral normalization reduce arithmetic errors without changing the intended measurements.
+- **CPU-specific acceleration.** Native scalar and SIMD paths support x86-64 and AArch64, including SSE2/AVX loudness filtering, wider AVX2/AVX-512 spectral kernels where enabled, and binary64 NEON loudness filtering. RustFFT supplies architecture-specific FFT acceleration. Optional ISA paths use runtime feature detection and retain portable fallbacks.
+- **Bounded PCM storage.** FFT buffers, quiet-passage detection and loudness energy cells have bounded working storage. Retained time series, spectra and album reports consume memory according to the selected measurements and input geometry. Resource limits constrain observation histories.
+
+### How fast is it?
+
+Representative native qualification measurements for the optimized binary64 implementation on a single logical CPU of an AMD Ryzen Threadripper 7970X:
+
+| 60 seconds of stereo, 24-bit PCM | 48 kHz | 768 kHz |
+| --- | ---: | ---: |
+| All 25 measurements | 243x realtime | 13x realtime |
+| Loudness range, short-term maximum and time series | 1,117x realtime | 70x realtime |
+
+These are median results from five runs using Rust 1.99.1 with portable code generation. The deterministic fixture alternates active signals with quiet passages. Timings include analyzer initialization, ingestion, finalization and reading the selected results; they exclude decoding, disk I/O and fixture generation. Actual throughput depends on the hardware, selected measurements and audio content.
+
+[docs/performance.md](docs/performance.md) describes the method, gives more results and documents memory use.
+
+## Getting started
+
+Audioscopy is a library. Obtain decoded PCM from your preferred audio decoder and pass the samples to an `Analyzer`.
 
 ```rust
-use audioscopy::{Analyzer, Band, Encoding, Format, Measurement,
-                 Measurements, NoiseSnapshot, NoiseView, Outcome, Settings,
-                 Value, Weighting};
+use audioscopy::{
+    Analyzer, Encoding, Error, Format, Measurement as M, Measurements,
+    NoiseView, Outcome, Settings, Track, Value,
+};
 
-fn main() -> Result<(), audioscopy::Error> {
+fn analyze_stereo(pcm: &[f64]) -> Result<Track, Error> {
     let format = Format {
-        sample_rate: 48_000,
-        channels: 1,
-        encoding: Encoding::Integer(16),
+        sample_rate: 96_000,
+        channels: 2,
+        encoding: Encoding::Float,
         loudness_roles: None,
     };
+
     let selection = Measurements::new(&[
-        Measurement::BitsInUse, Measurement::NoiseFloor,
+        M::LoudnessRange,
+        M::NoiseFloor,
+        M::AverageSpectrum,
+        M::Correlation,
     ]);
+
     let mut analyzer = Analyzer::new(format, selection, Settings::default())?;
-    // One second of quantized low-level PCM, supplied in decoder-sized chunks.
-    let pcm: Vec<f64> = (0..48_000)
-        .map(|i| if i % 48 < 24 { 1.0 / 32768.0 } else { -1.0 / 32768.0 })
-        .collect();
-    for chunk in pcm.chunks(997) {
+
+    // Process up to 4,096 stereo frames at a time.
+    // pcm contains decoded, interleaved left/right samples.
+    for chunk in pcm.chunks(4096 * 2) {
         analyzer.push_interleaved(chunk)?;
     }
+
     let report = analyzer.finish()?;
-    let full = NoiseView { weighting: Weighting::Unweighted, band: Band::Full };
-    if let Outcome::Value(Value::Scalar(dbfs)) =
-        report.measure(Measurement::NoiseFloor, full)
+
+    if let Outcome::Value(Value::Scalar(lu)) =
+        report.measure(M::LoudnessRange, NoiseView::default())
     {
-        assert!((dbfs - 20.0 * (1.0_f64 / 32768.0).log10()).abs() < 1e-9);
-    } else {
-        panic!("expected a qualifying quiet passage");
+        println!("Loudness range: {lu:.1} LU");
     }
-    // Persist this plain versioned record using the caller's cache format.
-    let saved = report.noise_record();
-    drop(report);
-    drop(pcm);
-    let restored = NoiseSnapshot::from_record(saved)?;
-    let weighted = restored.measure(Measurement::NoiseFloor, NoiseView {
-        weighting: Weighting::A,
-        band: Band::Audible,
-    });
-    assert!(matches!(weighted, Outcome::Value(Value::Scalar(_))));
-    Ok(())
+
+    Ok(report)
 }
 ```
 
-`Measurements::new` selects individual rows; `Measurements::all` selects the
-full inventory subset. `Measurements::default` is empty (UI defaults belong to
-the consumer). Requesting a subset avoids the other branches' DSP and storage;
-shared prerequisites, such as spectra for several noise rows, are calculated
-once per required stream. The upstream existing LRA meter also computes
-integrated loudness internally. If both LRA and short-term graph/max are
-selected, two native K-weighting paths run; no integrated/LRA work is started
-for short-term-only requests. Chunk boundaries do not reset analysis. Malformed
-pushes are validated before state changes; a terminal processing error requires
-starting a new analyzer. `finish` consumes the analyzer. It rejects zero frames.
+Use `Measurements::all()` to request every measurement. `Measurements::default()` is empty, so callers choose their own defaults.
 
-### Album
+### PCM requirements
 
-`AlbumAnalyzer::new(selection, settings)` → `begin_track(format)` →
-`push_interleaved` (zero or more valid pushes) → `end_track` for each track in
-order → `finish`. Each track is decoded once. `Album::tracks()` exposes ordered
-track results. `Album::measure` applies the individual album reduction rules.
+For signed integer PCM with `b` bits, normalize each original signed code by `2^(b-1)` and declare `Encoding::Integer(b)`. For example, 24-bit PCM divides by 8,388,608. This preserves the original integer grid, which is essential for exact resolution analysis. Avoid peak normalization, dithering or requantization before measurement unless those transformations are themselves part of what you intend to analyze.
 
-`Album::from_tracks(Vec<Track>)` also accepts individually computed results
-with identical selections and detector settings. When using `AlbumAnalyzer`,
-LRA follows a continuous programme clock/filter across same-rate/role tracks.
-When rate/roles change, or when starting from multiple independent results,
-LRA is `Outcome::CantTell` with a reason. A single cached track already is
-one complete programme. `Album::loudness_method()` identifies continuous,
-unavailable or unrequested LRA. Other album measurements remain available.
-Independent statistics cannot reconstruct boundary windows; no PCM resampler
-or artificial per-track tail is used in the album measurement.
+Floating-point PCM uses `Encoding::Float`; finite overs above nominal full scale are accepted up to an absolute magnitude of 16. NaN and infinite input samples are rejected. Multichannel loudness measurements require explicit channel roles for layouts with more than two channels. Stereo measurements apply to exactly two channels.
 
-Unavailable rows contribute no evidence to eligible-track modes and medians;
-if none apply, the album returns the corresponding typed unavailable outcome.
-For power-based pooling, qualifying quiet time or programme time is the weight,
-not track count, sample count across mismatched sample rates, or a mean in dB.
+### Albums
 
-### Outcomes and curves
+Use `AlbumAnalyzer` to analyze an ordered sequence of tracks. Call `begin_track(format)`, supply PCM with `push_interleaved`, then call `end_track` for each track. `finish` returns an `Album` with individual track reports and album-level results.
 
-`Outcome::NotRequested`, `Outcome::NotApplicable`, `Outcome::CantTell(reason)`
-and `Outcome::Value(value)` are distinct. The first three are never numeric.
-Exact zero power has a mathematically defined level of negative infinity;
-positive infinity may describe an exact zero denominator. The API does not
-use NaN as a display sentinel. Zero/zero stereo energy is defined as 0 dB;
-zero-variance correlation is 0. A maximum over no full three-second window,
-LRA with no eligible observations, and resolution/dynamic range unbounded by
-pure silence carry a reason rather than a fabricated finite result.
+Album measurements follow their own aggregation rules. For example, spectral and noise powers are pooled in linear units using real duration. Loudness range is measured over the continuous programme, including observation windows that cross track boundaries when the sample rate and channel roles remain compatible.
 
-`Value::Curve` is ordered numerical data; `Value::Curves` holds per-track
-loudness curves for an album. Spectrum curves are one-sided power density in
-dBFS/Hz with frequency in Hz. Loudness points use exclusive end time in seconds
-and LUFS. Album spectrum bins map to the finest native grid by linear energy
-splatting. No graph plotting is part of the crate.
+`Album::from_tracks` can combine existing track reports with matching measurement selections and settings. Independent reports cannot reconstruct continuous loudness windows across tracks. In that case, album LRA is unavailable, while other applicable album results remain accessible.
 
-### Re-reading noise
+### Noise analysis and reusable results
 
-`Track::noise_record()` exports only selected noise rows' sufficient statistics
-as a `NoiseRecord` (schema version 2). The consumer may persist its plain fields
-in any cache format. Version 1 records must be regenerated from PCM: their
-frequency distribution used a different, incorrect normalization. `NoiseSnapshot::from_record` validates masks, geometry,
-frames, power, thresholds and numeric values before accepting them. Its
-`measure` and `measure_album` reuse the report arithmetic without PCM or FFT.
-Records do not supply rows not measured originally. Weighting/band switches
-apply at read time; changing the quiet threshold or shortest gap requires a
-new measurement. Dither and click classifications do not change with frequency
-weighting or display band. A track with no qualifying quiet data is represented
-by absence of a spectrum, never by an invented zero noise measurement.
+The quiet-passage detector uses configurable level and duration thresholds. The defaults are -60 dBFS RMS and one second of contiguous quiet audio.
 
-## Definitions and decisions
+Noise measurements support unweighted, A-weighted and ITU-R 468 frequency weighting (RMS, rather than quasi-peak), with selectable audible-band, Nyquist-limited and full-band views. Measurements can be recalculated from the retained quiet spectrum without decoding or performing another FFT.
 
-The inventory does not specify numeric thresholds for several heuristic rows.
-The following are explicit first-round definitions, configurable where indicated.
-See `../MEASUREMENT-CONTRACT.md` for the complete row-by-row map and limitations.
+A track's `noise_record()` exports versioned sufficient statistics for the selected noise measurements. Applications can persist these in their preferred cache format and restore them with `NoiseSnapshot::from_record`. Changing the quiet-passage detector settings requires a new analysis.
 
-- Quiet passages: rational 50 ms blocks use maximum per-channel RMS at
-  or below `quiet_threshold_dbfs` (default -60 dBFS). Transition-block
-  refinement separates clear loud material using extreme excursions or
-  short 1 ms local RMS evidence. Aggregate per-channel RMS qualifies the
-  actual prefix/suffix, including quiet waveforms with above-threshold
-  crests. A consistent adjacent quiet block supplies bounded energy
-  context for partial cycles (half its minimum channel headroom per edge,
-  peak within 3 dB of its above-threshold crest, no extreme excursion).
-  If a mixed-block edge fails its aggregate test, up to two 1 ms local
-  slices may be trimmed at the separator-facing end. The retained edge
-  must satisfy the same adjacent quiet context. No trimming is used to
-  admit an entire final partial block. Clear abrupt transitions retain
-  sample-level boundaries; tonal transitions remain estimates. Ambiguous
-  low-contrast changes use the coarse detector/instantaneous edges. Only
-  contiguous real frames count toward `shortest_gap_seconds` (default
-  1 s); no padding or reduction of the minimum is used.
-- Spectrum: 50%-overlap sine-of-Hann (Vorbis) windows of size
-  `next_power_of_two(ceil(sample_rate/6))`. For H=N/2, w[i]^2+w[i+H]^2=1.
-  The first window starts H frames before the stream; outside the actual
-  stream/passage all samples are zero. Each real frame is counted once in
-  the denominator. Fixed one-sided FFT normalization preserves mean square
-  without rescaling frequency bins by block energy. Spectral leakage and
-  bin resolution still limit band/line estimates. Bandwidth augments the
-  complete-window extent with separately tapered real-support first/last
-  half-hop and shorter endpoint views. Complete-window bins must meet the
-  −80 dB floor relative to the full recording's maximum accumulated power
-  bin, even if the interior contains only dither. Local peaks must meet the −80 dB
-  threshold relative to both their own view's maximum and the full recording's
-  maximum accumulated power bin. Endpoint power uses the same fixed one-sided
-  FFT normalization as the retained spectrum; neither level nor duration is
-  independently normalized. The highest eligible peak beyond the interior
-  extent's physical-resolution guard can extend bandwidth. No endpoint
-  inference bins enter the retained power spectrum. Files without any
-  material interior bin use actual-support tapered evidence subject to the
-  same materiality test. Source-rate, codec and
-  stereo inference still prefer fully observed windows and can underrepresent
-  endpoint-only content. Every frame contributes to retained power. Bins use
-  half-open frequency bands, with Nyquist included in the final band.
-  A and ITU-R 468 apply their frequency response as a power multiplier
-  (468 RMS weighting, not quasi-peak).
-- Limiting uses sample peaks in rational 50 ms blocks, including a final
-  partial block, within 1 dB of the track maximum. The inventory permits this
-  instead of block true peaks. All-silent track: 0%.
-- Flat extrema: runs of at least 3 samples (relative tolerance 1e-5 or one
-  integer LSB, whichever is larger), with both neighboring samples proving a
-  local extremum and absolute value within 1 dB of the track peak. Count runs
-  per channel. Resampling and lossy coding may erase flat tops; slow/saturated
-  waveforms may also trigger them.
-- Integer resolution: OR of exact signed codes provides the normalized
-  low-bit depth. GCD of differences from the first code provides the exact
-  affine lattice step; `observed_lattice_bits` is the ceil-log2 width of
-  the observed span in lattice positions (None for constant samples).
-  `used` is the smaller width for a demonstrable nonbinary or offset
-  affine lattice (at least three positions); ordinary headroom does not
-  prevent this reduction. An aligned binary grid retains the normalized
-  count unless its span has a power-of-two count of at least four positions
-  and at least that many samples. Two points alone do not establish an
-  affine subset. This measures observed grid evidence, not source depth
-  or proof of occupation of every position.
-  Floating PCM is tested exactly on the normalized 2^-52 grid; no snapping.
-  Silence uses zero bits. Arbitrary float PCM may be `NonIntegerGrid`.
-- Dither: use the nominal integer spacing when eligible; otherwise require
-  exact zero-aligned binary spacing and peak no greater than eight such
-  LSBs. Both signs and the existing spectral shape test are required.
-  Exact integer-grid floats and padded integer PCM can qualify. Affine
-  spacing alone does not establish a binary quantizer; multiples of 100
-  nominal codes have only four-code alignment and fail the magnitude gate.
-  This remains a heuristic, not proof of provenance.
-- Effective bits: approximate `-noise_floor_dbfs / (20 log10(2))`; no ideal
-  quantizer or full-scale sine correction. The album uses its pooled floor,
-  following the inventory's provisional rule. Zero noise does not establish a
-  finite bound on effective bits. No UI default is chosen in this library.
-- Correlation uses mean-removed Pearson covariance. Balance is positive for
-  a louder left channel. Width is side/mid power in dB; mono compatibility
-  is the nonnegative loss from averaging channels, relative to their average
-  pre-sum power. Delay is positive when right lags left; bass cutoff is in Hz.
+### Interpreting results
 
-## Memory and performance
+Every measurement returns a typed `Outcome`: `Value`, `NotRequested`, `NotApplicable` or `CantTell(reason)`. A short recording may lack a complete loudness window; a recording may contain no qualifying quiet passages; a stereo delay may be ambiguous. These cases are distinct from measured zero.
 
-PCM working storage is bounded by the FFT window(s), two quiet blocks, small local
-history, and upstream loudness window. A candidate quiet run accumulates its
-own power sums and exact grid/sign evidence and commits only on duration qualification; even
-hours of silence do not retain hours of samples. Click detection uses five
-frames of context. Delay accumulates upper-band cross power and performs one
-inverse FFT at finish. FFT plans and scratch are reused per analysis stream.
+Spectrum curves report one-sided power density in dBFS/Hz, and loudness curves report LUFS against time. The library returns numerical curve data for applications to display or process. It does not render graphs.
 
-One retained spectrum is `(N/2+1)*8` bytes plus metadata: 32,776 bytes at
-48 kHz, 65,544 at 96 kHz, 131,080 at 192 kHz. A track retaining both average
-and quiet spectra needs roughly twice that. A 100-track 96 kHz album holding
-both needs ~12.5 MiB for bin data. The quiet detector may temporarily hold a
-candidate and pooled spectrum, not one spectrum per window. Dither adds a
-separate candidate spectrum only when selected. Cutoff/codec inference
-uses an additional transient spectrum only when selected. The maximum per-engine PCM
-window capacity is `N * channels * 8` bytes (64 MiB at the maximum format).
+## Where Audioscopy is going
 
-The time curve retains 10 points/s (16 bytes/point); limiting retains 20 block
-peaks/s during a track and drops them on finish. Flat-top candidates use an
-ordered sparse count map pruned by increasing track peak. The graph, limiting
-and candidate-map paths have a 4-million observation/entry admission cap.
-The upstream loudness meter enforces its own 256 MiB admission limit. Per-track reports retain only the scalar LRA; continuous album LRA
-uses the live native meter. Allocation failures from Rust's global allocator are not guaranteed
-recoverable; typical formats are substantially below the maximum geometry.
+The goal is a general-purpose library for detailed audio measurement, including demanding analytical and metrological applications.
 
-A reproducible throughput fixture is supplied (`cargo run --release --example
-benchmark -- 60 96000`); no throughput claim is made without actual Rust
-execution and target-host measurements.
+Planned areas of development include:
 
-## Build and publish
+- **Comparative analysis.** Align recordings in time and gain, estimate sample-rate and speed differences, detect polarity inversion and channel swaps, measure null depth and residual energy, compare tonal balance, and quantify timing drift. This will support comparisons of different masters, encodes, transfers and processing chains.
+- **Optional high-precision measurements.** Provide x87 extended-precision paths on x86-64 and portable higher-precision alternatives, such as double-double arithmetic, where independent numerical tests establish a benefit. Callers will be able to choose higher precision for cancellation-sensitive and extreme-dynamic-range measurements while retaining the fast binary64 implementation as the default.
+- **Known-signal measurements.** Analyze distortion (THD, THD+N, IMD and individual harmonics), frequency response, crosstalk, linearity, phase, group delay, impulse response, and aliasing and imaging rejection when suitable reference or test signals are available.
+- **Further architecture optimization.** Continue investigating SIMD and FMA on x86-64 and AArch64 where measured application performance or numerical fidelity justifies the additional implementation.
 
-With the two trees beside one another:
+The current release analyzes PCM from a single recording or an ordered album. Direct DSD-domain analysis, reference-recording comparison and known-test-signal analysis are not yet implemented. Audio decoding and presentation remain the responsibility of the caller.
+
+## Building from source
+
+Audioscopy requires Rust 1.95 or later. The optional Nix development environment pins the qualification toolchain to Rust 1.99.1.
+
+During development, place the `audioscopy` and `true-peak` source trees beside one another. From the `audioscopy` directory:
 
 ```sh
-cd audioscopy
-nix develop
 cargo test --release --no-fail-fast
 cargo doc --no-deps
-cargo run --release --example benchmark -- 60 96000
+cargo run --release --example benchmark -- 60 96000 2
 ```
 
-Or use the manifest's minimum Rust 1.95 or later; the supplied flakes pin
-1.99.1. The existing true-peak README documents the release-vectorizer issue
-and workaround for old compilers. The bundle's `qualify.sh` runs both trees.
+To reproduce a workload from the performance table:
 
-Direct dependencies:
+```sh
+cargo run --release --example numerical_profile -- all 48000 2 60
+```
 
-| Crate | Version | Licence | Reason |
-|---|---|---|---|
-| `true-peak` | `=0.1.0`, sibling during development | MIT OR Apache-2.0 | Existing qualified native loudness core; additive ungated short-term API. |
-| `rustfft` | `=6.4.1` | MIT OR Apache-2.0 | Mature, portable pure-Rust FFT planner, reusable scratch and CPU-specific SIMD. Upstream release 2025-09-18; repo maintained as of 2026-11. |
-| `num-complex` (via true-peak and RustFFT) | `=0.4.6` in true-peak | MIT OR Apache-2.0 | Existing complex arithmetic dependency; RustFFT re-exports its compatible complex type. |
+Use `nix develop` before the Cargo commands if you prefer the pinned development environment.
 
-RustFFT upstream: <https://docs.rs/crate/rustfft/6.4.1> and
-<https://github.com/ejmahler/RustFFT/releases/tag/6.4.1>. Cargo must resolve and
-verify the transitive graph; it was not available in the delivery environment.
-The direct dependency versions are pinned; the resolved transitive versions,
-licenses and lockfile have not been independently checked in this delivery.
+Audioscopy depends directly on `true-peak` for loudness measurements and [RustFFT](https://github.com/ejmahler/RustFFT) for FFT computation. Once both crates are published, applications can depend on Audioscopy directly from the Cargo registry.
 
-`true-peak` 0.1.0 must be published first, **including the additive short-term
-API**, then `audioscopy` 0.1.0. A Cargo dependency with both `path` and `version`
-uses the sibling locally and the version from the registry in the published
-manifest. Packaging audioscopy cannot resolve an unpublished dependency.
-Do not publish either crate until the native qualification gates pass.
-
-## Licence
+## License
 
 audioscopy is free software: you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free
@@ -292,7 +178,3 @@ any later version. The full text is in [COPYING](COPYING).
 It is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.
-
-### K-weighting numerical fidelity
-
-Short-term maximum, loudness over time and track/continuous-album loudness range explicitly select the opt-in conditioned native K-weighting realization from the sibling `true-peak` crate. Measurement selection, gating, window clocks and album continuity remain unchanged. The delivery's `K-WEIGHTING-REPORT.md` records independent arbitrary-precision and compiled-C evidence. Native qualification on the pinned toolchain is an outstanding release gate.
