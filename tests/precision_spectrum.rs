@@ -139,3 +139,47 @@ fn independent_analyzers_can_move_between_threads() {
         assert_eq!(actual, expected);
     }
 }
+
+#[test]
+fn auto_double_double_selects_vector_backend_by_isa() {
+    if !B::DoubleDouble.available() {
+        return;
+    }
+    let f = format(48000, 2);
+    let vector = [B::DoubleDoubleAvx2, B::DoubleDoubleNeon]
+        .into_iter()
+        .find(|b| b.available());
+    for request in [B::Auto, B::DoubleDouble] {
+        for precision in [Precision::DoubleDouble, Precision::Extended80] {
+            let actual = SpectrumAnalyzer::new(f.clone(), precision, request)
+                .unwrap()
+                .backend();
+            if precision == Precision::Extended80 && request == B::Auto && B::X87.available() {
+                assert_eq!(actual, B::X87);
+                continue;
+            }
+            match vector {
+                Some(v) => assert_eq!(actual, v),
+                None => assert!(matches!(
+                    actual,
+                    B::DoubleDoublePortable | B::DoubleDoubleFma
+                )),
+            }
+        }
+    }
+    // The automatic choice changes speed only: same limbs as scalar DD.
+    let pcm: Vec<_> = (0..48_000 * 2)
+        .map(|i| f64::from((i * 7919 % 4096) - 2048) / 4096.0)
+        .collect();
+    let scalar = if B::DoubleDoubleFma.available() {
+        B::DoubleDoubleFma
+    } else {
+        B::DoubleDoublePortable
+    };
+    let mut auto = SpectrumAnalyzer::new(f.clone(), Precision::DoubleDouble, B::Auto).unwrap();
+    auto.push_interleaved(&pcm).unwrap();
+    assert_eq!(
+        auto.finish().unwrap().bins,
+        calculate(f, scalar, &pcm, 4093).bins
+    );
+}

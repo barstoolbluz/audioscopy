@@ -20,12 +20,15 @@ pub use noise::{QuietNoiseAnalyzer, QuietNoisePool, QuietNoiseReport};
 /// Requested or actual wide-spectrum computational backend.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum SpectrumBackend {
-    /// Choose a backend that satisfies the requested precision.
+    /// Choose a backend that satisfies the requested precision. For
+    /// double-double this is the first vector backend that this build and
+    /// processor support (AVX2, then NEON), else scalar double-double.
     #[default]
     Auto,
     /// Genuine extended80 on native GNU/Linux x86-64 with `precision-x87`.
     X87,
-    /// Select baseline or scalar FMA double-double; vector modes are explicit.
+    /// Automatic double-double selection, the same as `Auto` with
+    /// `Precision::DoubleDouble`. Never selects x87.
     DoubleDouble,
     /// Double-double with the platform's baseline ISA and C `fma`.
     DoubleDoublePortable,
@@ -278,6 +281,22 @@ pub struct SpectrumAnalyzer {
     failed: bool,
 }
 
+/// Automatic double-double selection. Every vector backend reproduces the
+/// scalar double-double limbs exactly, so this choice changes speed only.
+/// Selection is by ISA, detected at run time by the native kernel: AVX2 and
+/// FMA on x86-64, Advanced SIMD on AArch64. AVX-512F stays an explicit
+/// request; AVX2 is always present when AVX-512F is. Without a vector ISA,
+/// the native kernel picks scalar FMA or baseline double-double.
+fn auto_double_double() -> SpectrumBackend {
+    [
+        SpectrumBackend::DoubleDoubleAvx2,
+        SpectrumBackend::DoubleDoubleNeon,
+    ]
+    .into_iter()
+    .find(|backend| backend.available())
+    .unwrap_or(SpectrumBackend::DoubleDouble)
+}
+
 fn select_backend(
     precision: Precision,
     backend: SpectrumBackend,
@@ -286,14 +305,14 @@ fn select_backend(
         (Precision::Extended80, SpectrumBackend::Auto) if SpectrumBackend::X87.available() => {
             SpectrumBackend::X87
         }
-        (Precision::Extended80 | Precision::DoubleDouble, SpectrumBackend::Auto) => {
-            SpectrumBackend::DoubleDouble
-        }
+        (
+            Precision::Extended80 | Precision::DoubleDouble,
+            SpectrumBackend::Auto | SpectrumBackend::DoubleDouble,
+        ) => auto_double_double(),
         (Precision::Extended80, SpectrumBackend::X87) => SpectrumBackend::X87,
         (
             Precision::Extended80 | Precision::DoubleDouble,
-            SpectrumBackend::DoubleDouble
-            | SpectrumBackend::DoubleDoublePortable
+            SpectrumBackend::DoubleDoublePortable
             | SpectrumBackend::DoubleDoubleFma
             | SpectrumBackend::DoubleDoubleAvx2
             | SpectrumBackend::DoubleDoubleAvx512
@@ -320,7 +339,8 @@ fn compatible_backend(selected: SpectrumBackend, actual: SpectrumBackend) -> boo
 
 impl SpectrumAnalyzer {
     /// Choose a wide precision and backend. Extended80/Auto uses x87 when
-    /// available, otherwise double-double. DoubleDouble never selects x87.
+    /// available, otherwise automatic double-double, which prefers a vector
+    /// backend. DoubleDouble never selects x87.
     /// Use the ordinary [`crate::Analyzer`] for Binary64 measurements.
     pub fn new(
         format: Format,

@@ -10,8 +10,12 @@ readme = "README.md"
 keywords = ["audio", "analysis", "measurement", "dsp"]
 categories = ["multimedia::audio"]
 
-# Opt-in qualification candidates. Default production code remains unchanged.
 [features]
+# Binary64 speed-ups, on by default. Both give byte-identical measurement
+# records to the scalar path and select their ISA at run time; the NEON
+# path is compiled only on AArch64. Disable with default-features = false.
+default = ["experimental-stereo-spectrum-split", "experimental-loudness-neon"]
+# Opt-in qualification candidates.
 experimental-spectral-avx2 = []
 experimental-spectral-avx512 = []
 experimental-stereo-spectrum-split = []
