@@ -10,6 +10,20 @@ readme = "README.md"
 keywords = ["audio", "analysis", "measurement", "dsp"]
 categories = ["multimedia::audio"]
 
+# Opt-in qualification candidates. Default production code remains unchanged.
+[features]
+experimental-spectral-avx2 = []
+experimental-spectral-avx512 = []
+experimental-stereo-spectrum-split = []
+experimental-loudness-neon = ["true-peak/experimental-loudness-neon"]
+# Optional high-precision correlation. The ordinary analyzer is unchanged.
+precision = []
+precision-x87 = ["precision"]
+# Optional end-to-end wide average spectrum (native C11 kernel).
+precision-spectrum = ["precision"]
+# Optional wider native-profile integrated loudness.
+precision-loudness = ["precision"]
+
 [dependencies]
 # Cargo uses the sibling during local development and the registry version
 # after publication. Publish true-peak 0.1.0 first.

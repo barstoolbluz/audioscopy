@@ -1,18 +1,20 @@
 //! Selective, streaming measurements of decoded, interleaved PCM.
 //! No decoder, file I/O, UI, or application-specific types are required.
 #![warn(missing_docs)]
-mod spectrum;
-mod temporal;
-mod report;
-mod stream;
 mod noise_record;
+#[cfg(feature = "precision")]
+pub mod precision;
+mod report;
+mod spectrum;
+mod stream;
+mod temporal;
 
+pub use noise_record::{NoiseRecord, NoiseSnapshot, QuietSpectrumRecord};
 pub use report::{Album, AlbumLoudnessMethod, Track};
-pub use stream::{Analyzer, AlbumAnalyzer};
-pub use noise_record::{NoiseRecord, QuietSpectrumRecord, NoiseSnapshot};
+use std::fmt;
+pub use stream::{AlbumAnalyzer, Analyzer};
 /// Decoded loudness channel roles from the shared native loudness core.
 pub use true_peak::loudness::ChannelRole;
-use std::fmt;
 
 /// One selectable measurement from inventory revision 2.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -72,13 +74,33 @@ pub enum Measurement {
 
 impl Measurement {
     /// Every in-scope measurement, in inventory order.
-    pub const ALL: [Self; 25] = [Self::LoudnessRange, Self::ShortTermMaximum, Self::LoudnessOverTime,
-        Self::Limiting, Self::FlatToppedPeaks, Self::BitsInUse, Self::EffectiveBits,
-        Self::LikelySourceRate, Self::LossyCodingPattern, Self::Bandwidth, Self::Above20Khz,
-        Self::AverageSpectrum, Self::NoiseFloor, Self::DynamicRange, Self::NoiseSpectrum,
-        Self::HumAndIdleTones, Self::NoiseByBand, Self::ClicksPerMinute, Self::Dither,
-        Self::Correlation, Self::Balance, Self::Width, Self::MonoCompatibility,
-        Self::InterChannelDelay, Self::BassWidth];
+    pub const ALL: [Self; 25] = [
+        Self::LoudnessRange,
+        Self::ShortTermMaximum,
+        Self::LoudnessOverTime,
+        Self::Limiting,
+        Self::FlatToppedPeaks,
+        Self::BitsInUse,
+        Self::EffectiveBits,
+        Self::LikelySourceRate,
+        Self::LossyCodingPattern,
+        Self::Bandwidth,
+        Self::Above20Khz,
+        Self::AverageSpectrum,
+        Self::NoiseFloor,
+        Self::DynamicRange,
+        Self::NoiseSpectrum,
+        Self::HumAndIdleTones,
+        Self::NoiseByBand,
+        Self::ClicksPerMinute,
+        Self::Dither,
+        Self::Correlation,
+        Self::Balance,
+        Self::Width,
+        Self::MonoCompatibility,
+        Self::InterChannelDelay,
+        Self::BassWidth,
+    ];
 }
 
 /// Compact selection. Empty selections perform only input validation.
@@ -86,18 +108,32 @@ impl Measurement {
 pub struct Measurements(u32);
 impl Measurements {
     /// Select all measurements.
-    pub const fn all() -> Self { Self((1 << 25) - 1) }
+    pub const fn all() -> Self {
+        Self((1 << 25) - 1)
+    }
     /// Select the supplied measurements (duplicates are harmless).
-    pub fn new(items: &[Measurement]) -> Self { Self(items.iter().fold(0, |a, m| a | (1 << (*m as u8)))) }
+    pub fn new(items: &[Measurement]) -> Self {
+        Self(items.iter().fold(0, |a, m| a | (1 << (*m as u8))))
+    }
     /// Whether a particular measurement was requested.
-    pub const fn contains(self, m: Measurement) -> bool { self.0 & (1 << (m as u8)) != 0 }
+    pub const fn contains(self, m: Measurement) -> bool {
+        self.0 & (1 << (m as u8)) != 0
+    }
     /// Stable bit mask in inventory order, for caller-owned persistence.
-    pub const fn bits(self) -> u32 { self.0 }
+    pub const fn bits(self) -> u32 {
+        self.0
+    }
     /// Validate a persisted bit mask; unknown bits are rejected.
     pub const fn from_bits(bits: u32) -> Option<Self> {
-        if bits & !Self::all().0 == 0 { Some(Self(bits)) } else { None }
+        if bits & !Self::all().0 == 0 {
+            Some(Self(bits))
+        } else {
+            None
+        }
     }
-    pub(crate) fn any(self, items: &[Measurement]) -> bool { items.iter().any(|m| self.contains(*m)) }
+    pub(crate) fn any(self, items: &[Measurement]) -> bool {
+        items.iter().any(|m| self.contains(*m))
+    }
 }
 
 /// Original PCM sample representation. The caller supplies normalized f64
@@ -136,14 +172,20 @@ pub struct Settings {
     pub shortest_gap_seconds: f64,
 }
 impl Default for Settings {
-    fn default() -> Self { Self { quiet_threshold_dbfs: -60.0, shortest_gap_seconds: 1.0 } }
+    fn default() -> Self {
+        Self {
+            quiet_threshold_dbfs: -60.0,
+            shortest_gap_seconds: 1.0,
+        }
+    }
 }
 
 /// Frequency weighting of stored noise power (not a quasi-peak detector).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum Weighting {
     /// No weighting.
-    #[default] Unweighted,
+    #[default]
+    Unweighted,
     /// IEC A-frequency weighting.
     A,
     /// ITU-R BS.468 frequency weighting, RMS rather than quasi-peak detection.
@@ -154,7 +196,8 @@ pub enum Weighting {
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum Band {
     /// 20 Hz through 20 kHz.
-    #[default] Audible,
+    #[default]
+    Audible,
     /// 20 Hz through Nyquist.
     ToNyquist,
     /// DC through Nyquist.
@@ -266,7 +309,7 @@ pub enum Value {
     /// Source rate in Hz, or None for a mixed album.
     SourceRate(Option<u32>),
     /// Number of tracks with a lossy pattern and total tracks considered.
-    Pattern { 
+    Pattern {
         /// Tracks with a detected pattern.
         found: usize,
         /// Tracks considered.
@@ -322,10 +365,24 @@ impl fmt::Display for Error {
 }
 impl std::error::Error for Error {}
 impl From<true_peak::loudness::LoudnessError> for Error {
-    fn from(e: true_peak::loudness::LoudnessError) -> Self { Self::Loudness(e) }
+    fn from(e: true_peak::loudness::LoudnessError) -> Self {
+        Self::Loudness(e)
+    }
 }
 
-pub(crate) fn db(power: f64) -> f64 { 10.0 * power.log10() }
-pub(crate) fn ratio(a: f64, b: f64) -> f64 { if a == 0.0 && b == 0.0 { 0.0 } else { db(a) - db(b) } }
-pub(crate) fn scalar(x: f64) -> Outcome<Value> { Outcome::Value(Value::Scalar(x)) }
-pub(crate) fn unavailable(reason: impl Into<String>) -> Outcome<Value> { Outcome::CantTell(reason.into()) }
+pub(crate) fn db(power: f64) -> f64 {
+    10.0 * power.log10()
+}
+pub(crate) fn ratio(a: f64, b: f64) -> f64 {
+    if a == 0.0 && b == 0.0 {
+        0.0
+    } else {
+        db(a) - db(b)
+    }
+}
+pub(crate) fn scalar(x: f64) -> Outcome<Value> {
+    Outcome::Value(Value::Scalar(x))
+}
+pub(crate) fn unavailable(reason: impl Into<String>) -> Outcome<Value> {
+    Outcome::CantTell(reason.into())
+}
