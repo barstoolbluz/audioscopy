@@ -9,6 +9,15 @@ fn run(command: &mut Command) {
     );
 }
 
+/// Warnings stay visible in every build. They are errors only when
+/// AUDIOSCOPY_NATIVE_WERROR=1 (qualification), so a newer C compiler that
+/// adds a warning cannot break an ordinary build. Warnings do not change
+/// the generated code.
+fn werror() -> Option<&'static str> {
+    println!("cargo:rerun-if-env-changed=AUDIOSCOPY_NATIVE_WERROR");
+    (env::var("AUDIOSCOPY_NATIVE_WERROR").as_deref() == Ok("1")).then_some("-Werror")
+}
+
 fn build_correlation() {
     println!("cargo:rerun-if-changed=native/correlation_x87.c");
     println!("cargo:rerun-if-env-changed=CC");
@@ -39,11 +48,9 @@ fn build_correlation() {
             "-fno-lto",
             "-Wall",
             "-Wextra",
-            "-Werror",
-            "-c",
-            "native/correlation_x87.c",
-            "-o",
         ])
+        .args(werror())
+        .args(["-c", "native/correlation_x87.c", "-o"])
         .arg(&object));
     run(Command::new(ar).arg("crs").arg(&archive).arg(&object));
     println!("cargo:rustc-link-search=native={}", out.display());
@@ -106,8 +113,8 @@ fn build_wide() {
         "-fno-lto",
         "-Wall",
         "-Wextra",
-        "-Werror",
     ]);
+    command.args(werror());
     if target == "x86_64-unknown-linux-gnu" && env::var_os("CARGO_FEATURE_PRECISION_X87").is_some()
     {
         command.arg("-DAUDIOSCOPY_ENABLE_X87");

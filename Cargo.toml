@@ -11,10 +11,26 @@ keywords = ["audio", "analysis", "measurement", "dsp"]
 categories = ["multimedia::audio"]
 
 [features]
-# Binary64 speed-ups, on by default. Both give byte-identical measurement
-# records to the scalar path and select their ISA at run time; the NEON
-# path is compiled only on AArch64. Disable with default-features = false.
-default = ["experimental-stereo-spectrum-split", "experimental-loudness-neon"]
+# On by default; opt out with default-features = false and list the
+# features you want.
+#
+# Binary64 speed-ups. Both give byte-identical measurement records to the
+# scalar path and select their ISA at run time; the NEON path is compiled
+# only on AArch64.
+#
+# Precision interfaces (audioscopy::precision): double-double on every
+# target, and genuine x87 extended80 on native x86_64-unknown-linux-gnu
+# builds. The native C11 kernels need a C compiler (cc) when the target is
+# a supported native GNU/Linux or Apple target; elsewhere, and when cross
+# compiling, they are not built and those backends report unavailable.
+# The ordinary Analyzer does not use these interfaces.
+default = [
+    "experimental-stereo-spectrum-split",
+    "experimental-loudness-neon",
+    "precision-x87",
+    "precision-spectrum",
+    "precision-loudness",
+]
 # Opt-in qualification candidates.
 experimental-spectral-avx2 = []
 experimental-spectral-avx512 = []
